@@ -1,15 +1,18 @@
 const Joi = require('joi')
-const { bookingStatuses, serviceTypes } = require('../constants/booking')
+const { bookingStatuses } = require('../constants/booking')
 
 const objectId = Joi.string().hex().length(24)
 const dateOnly = Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/)
+const serviceIdentifier = Joi.string().trim().min(2).max(120)
+const serviceSlug = Joi.string().trim().lowercase().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120)
 
 const createBooking = Joi.object({
   body: Joi.object({
     clientName: Joi.string().trim().min(2).max(100).required(),
     clientEmail: Joi.string().trim().email().max(120).required(),
     clientPhone: Joi.string().trim().min(7).max(20).required(),
-    service: Joi.string().valid(...serviceTypes).required(),
+    service: serviceIdentifier.required(),
+    serviceSlug,
     package: Joi.string().trim().max(80).allow('', null),
     preferredDate: dateOnly.required(),
     preferredTime: Joi.string().trim().max(30).required(),
@@ -25,9 +28,10 @@ const availability = Joi.object({
   params: Joi.object(),
   query: Joi.object({
     date: dateOnly.required(),
-    service: Joi.string().valid(...serviceTypes),
+    service: serviceIdentifier,
+    serviceSlug,
     package: Joi.string().trim().max(80).allow('', null)
-  })
+  }).or('service', 'serviceSlug')
 })
 
 const listBookings = Joi.object({
@@ -35,7 +39,8 @@ const listBookings = Joi.object({
   params: Joi.object(),
   query: Joi.object({
     status: Joi.string().valid(...Object.values(bookingStatuses)),
-    service: Joi.string().valid(...serviceTypes),
+    service: serviceIdentifier,
+    serviceSlug,
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(10)
   })
@@ -65,7 +70,8 @@ const updateBooking = Joi.object({
     clientName: Joi.string().trim().min(2).max(100),
     clientEmail: Joi.string().trim().email().max(120),
     clientPhone: Joi.string().trim().min(7).max(20),
-    service: Joi.string().valid(...serviceTypes),
+    service: serviceIdentifier,
+    serviceSlug,
     package: Joi.string().trim().max(80).allow('', null),
     preferredDate: Joi.date().iso(),
     preferredTime: Joi.string().trim().max(30).allow('', null),

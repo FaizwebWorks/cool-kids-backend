@@ -100,12 +100,12 @@ Change password body:
 Public booking creation does not require login.
 
 ```txt
-GET /bookings/availability?date=2026-05-01&service=Newborn&package=Starter%20Package
+GET /bookings/availability?date=2026-05-01&serviceSlug=newborn&package=Starter%20Package
 POST /bookings
 GET /bookings/public/:id?clientEmail=aarav@example.com
 ```
 
-Availability response includes free/busy slots. Backend checks MongoDB bookings first, and also checks Google Calendar when Google Calendar env is configured.
+Availability response includes free/busy slots. Backend resolves service/package duration from MongoDB, checks MongoDB bookings first, and also checks Google Calendar when Google Calendar env is configured.
 
 ```json
 {
@@ -137,6 +137,7 @@ Body:
   "clientEmail": "aarav@example.com",
   "clientPhone": "9876543210",
   "service": "Newborn",
+  "serviceSlug": "newborn",
   "package": "Starter Package",
   "preferredDate": "2026-05-01",
   "preferredTime": "09:00 AM",
@@ -151,6 +152,7 @@ Admin/staff booking APIs require Bearer token:
 GET /bookings?page=1&limit=10
 GET /bookings?status=pending&page=1&limit=10
 GET /bookings?service=Newborn&page=1&limit=10
+GET /bookings?serviceSlug=newborn&page=1&limit=10
 GET /bookings/:id
 PATCH /bookings/:id
 PATCH /bookings/:id/status
@@ -190,12 +192,136 @@ cancelled
 Allowed services:
 
 ```txt
-Newborn
-Maternity
-Birthday
-Wedding
-Portrait
-Fashion
+Services are managed dynamically through /services.
+Seed defaults: Newborn, Maternity, Birthday, Wedding, Portrait, Fashion.
+```
+
+### Services
+
+Public service APIs do not require login:
+
+```txt
+GET /services
+GET /services/:slug
+```
+
+Admin/staff service APIs require Bearer token:
+
+```txt
+GET /services/admin/all?page=1&limit=20
+POST /services
+PATCH /services/:id/cover-image
+PATCH /services/:id
+PATCH /services/:id/status
+DELETE /services/:id
+```
+
+Create service body:
+
+```json
+{
+  "title": "Newborn",
+  "slug": "newborn",
+  "subtitle": "Gentle newborn photography sessions",
+  "description": "Soft, safe, and timeless newborn photography.",
+  "coverImage": "https://example.com/newborn.jpg",
+  "startingPrice": 5000,
+  "isActive": true,
+  "displayOrder": 1,
+  "seoTitle": "Newborn Photography - The Cool Kids Studio",
+  "seoDescription": "Book newborn photography sessions with The Cool Kids Studio.",
+  "defaultDurationMinutes": 60,
+  "availablePackages": [
+    {
+      "name": "Starter Package",
+      "price": 5000,
+      "durationMinutes": 60,
+      "description": "A focused studio session.",
+      "isActive": true,
+      "displayOrder": 1
+    }
+  ]
+}
+```
+
+Seed default services:
+
+```bash
+npm run seed:services
+```
+
+### Uploads
+
+Admin/staff upload APIs require Bearer token and `multipart/form-data`.
+
+```txt
+GET /uploads/images?page=1&limit=20
+GET /uploads/images?context=service_cover&page=1&limit=20
+POST /uploads/images
+PATCH /services/:id/cover-image
+```
+
+`POST /uploads/images` form-data:
+
+```txt
+image: <file>
+context: service_cover | gallery | testimonial | general
+```
+
+`PATCH /services/:id/cover-image` form-data:
+
+```txt
+image: <file>
+```
+
+Allowed image types:
+
+```txt
+image/jpeg
+image/png
+image/webp
+image/avif
+```
+
+Max image size:
+
+```txt
+10MB
+```
+
+Frontend must send uploads as `multipart/form-data`, not JSON/base64. Example:
+
+```js
+const formData = new FormData()
+formData.append('image', file)
+formData.append('context', 'service_cover')
+
+await fetch(`${API_BASE_URL}/uploads/images`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${accessToken}`
+  },
+  body: formData
+})
+```
+
+Do not manually set the `Content-Type` header for `FormData`; the browser will set the multipart boundary.
+
+Upload response includes Cloudinary URL and database asset metadata:
+
+```json
+{
+  "success": true,
+  "message": "Image uploaded successfully",
+  "data": {
+    "_id": "...",
+    "publicId": "the-cool-kids/services/covers/abc",
+    "secureUrl": "https://res.cloudinary.com/...",
+    "width": 1200,
+    "height": 800,
+    "context": "service_cover"
+  }
+}
 ```
 
 ## Suggested Test Order
@@ -204,14 +330,17 @@ Fashion
 2. `POST /auth/register`
 3. `POST /auth/login`
 4. `GET /auth/me`
-5. `POST /bookings`
-6. `GET /bookings` without token should fail
-7. `GET /bookings` with token should pass
-8. `GET /bookings/:id`
-9. `PATCH /bookings/:id`
-10. `PATCH /bookings/:id/status`
-11. `POST /auth/refresh`
-12. `POST /auth/logout`
+5. `GET /services`
+6. `POST /uploads/images` with token and multipart image
+7. `GET /bookings/availability?date=2026-05-01&serviceSlug=newborn&package=Starter%20Package`
+8. `POST /bookings`
+9. `GET /bookings` without token should fail
+10. `GET /bookings` with token should pass
+11. `GET /bookings/:id`
+12. `PATCH /bookings/:id`
+13. `PATCH /bookings/:id/status`
+14. `POST /auth/refresh`
+15. `POST /auth/logout`
 
 ## Notes
 
@@ -265,4 +394,15 @@ Brevo dashboard path:
 ```txt
 Brevo -> SMTP & API -> API Keys -> Generate a new API key
 Brevo -> Senders & IP -> Senders -> Add/verify sender email
+```
+
+## Cloudinary Setup
+
+Cloudinary image uploads require:
+
+```txt
+CLOUDINARY_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_FOLDER=the-cool-kids
 ```

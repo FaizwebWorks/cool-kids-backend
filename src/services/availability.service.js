@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking')
 const googleCalendarService = require('./googleCalendar.service')
+const serviceService = require('./service.service')
 const {
   bookingTimezone,
   busyBookingStatuses,
@@ -79,6 +80,21 @@ const getPackageDuration = (packageName) => {
   return packageDurations[packageName] || defaultSlotDurationMinutes
 }
 
+const getBookingDuration = (booking) => {
+  return booking.packageSnapshot?.durationMinutes || getPackageDuration(booking.package)
+}
+
+const getAvailabilityDuration = async ({ service, serviceSlug, package: packageName }) => {
+  if (!service && !serviceSlug) {
+    return getPackageDuration(packageName)
+  }
+
+  const activeService = await serviceService.findActiveServiceForBooking({ service, serviceSlug })
+  const selectedPackage = serviceService.getActivePackageForBooking(activeService, packageName)
+
+  return selectedPackage?.durationMinutes || activeService.defaultDurationMinutes || defaultSlotDurationMinutes
+}
+
 const getMongoBusyPeriods = async ({ date, excludeBookingId }) => {
   const dayStart = toUtcDateFromIst(date, 0)
   const dayEnd = toUtcDateFromIst(date, 24 * 60)
@@ -107,7 +123,7 @@ const getMongoBusyPeriods = async ({ date, excludeBookingId }) => {
         return null
       }
 
-      const duration = getPackageDuration(booking.package)
+      const duration = getBookingDuration(booking)
 
       return {
         start: toUtcDateFromIst(date, startMinutes),
@@ -119,8 +135,8 @@ const getMongoBusyPeriods = async ({ date, excludeBookingId }) => {
     .filter(Boolean)
 }
 
-const getAvailability = async ({ date, package: packageName, excludeBookingId }) => {
-  const duration = getPackageDuration(packageName)
+const getAvailability = async ({ date, service, serviceSlug, package: packageName, excludeBookingId }) => {
+  const duration = await getAvailabilityDuration({ service, serviceSlug, package: packageName })
   const weekday = getIstWeekday(date)
   const startMinutes = minutesFromClock(workingHours.start)
   const endMinutes = minutesFromClock(workingHours.end)
@@ -185,8 +201,8 @@ const getAvailability = async ({ date, package: packageName, excludeBookingId })
   }
 }
 
-const assertSlotAvailable = async ({ date, preferredTime, package: packageName, excludeBookingId }) => {
-  const availability = await getAvailability({ date, package: packageName, excludeBookingId })
+const assertSlotAvailable = async ({ date, preferredTime, service, serviceSlug, package: packageName, excludeBookingId }) => {
+  const availability = await getAvailability({ date, service, serviceSlug, package: packageName, excludeBookingId })
   const slot = availability.slots.find((item) => item.time === preferredTime)
 
   return Boolean(slot?.available)

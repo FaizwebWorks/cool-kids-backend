@@ -24,7 +24,7 @@ const login = Joi.object({
 
 const refresh = Joi.object({
   body: Joi.object({
-    refreshToken: Joi.string().required()
+    refreshToken: Joi.string().optional()
   }),
   params: Joi.object(),
   query: Joi.object()

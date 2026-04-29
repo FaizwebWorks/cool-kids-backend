@@ -25,7 +25,11 @@ const envSchema = Joi.object({
   BREVO_API_KEY: Joi.string().allow('', null),
   BREVO_SENDER_EMAIL: Joi.string().email().allow('', null),
   BREVO_SENDER_NAME: Joi.string().allow('', null).default('The Cool Kids Studio'),
-  ADMIN_NOTIFICATION_EMAIL: Joi.string().email().allow('', null)
+  ADMIN_NOTIFICATION_EMAIL: Joi.string().email().allow('', null),
+  CLOUDINARY_NAME: Joi.string().allow('', null),
+  CLOUDINARY_API_KEY: Joi.string().allow('', null),
+  CLOUDINARY_API_SECRET: Joi.string().allow('', null),
+  CLOUDINARY_FOLDER: Joi.string().allow('', null).default('the-cool-kids')
 }).unknown(true)
 
 const { value: env, error } = envSchema.validate(process.env, {
@@ -73,5 +77,11 @@ module.exports = {
     senderEmail: env.BREVO_SENDER_EMAIL,
     senderName: env.BREVO_SENDER_NAME,
     adminEmail: env.ADMIN_NOTIFICATION_EMAIL
+  },
+  cloudinary: {
+    cloudName: env.CLOUDINARY_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+    folder: env.CLOUDINARY_FOLDER || 'the-cool-kids'
   }
 }

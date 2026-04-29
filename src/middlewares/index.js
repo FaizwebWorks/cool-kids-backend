@@ -6,6 +6,7 @@ const authMiddleware = require('./auth.middleware')
 const optionalAuthMiddleware = require('./optionalAuth.middleware')
 const authorizeRoles = require('./role.middleware')
 const bootstrapOrAdmin = require('./bootstrapAdmin.middleware')
+const { uploadSingleImage } = require('./upload.middleware')
 
 module.exports = {
   validate,
@@ -15,5 +16,6 @@ module.exports = {
   authMiddleware,
   optionalAuthMiddleware,
   authorizeRoles,
-  bootstrapOrAdmin
+  bootstrapOrAdmin,
+  uploadSingleImage
 }

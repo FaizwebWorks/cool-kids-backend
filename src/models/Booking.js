@@ -2,8 +2,7 @@ const mongoose = require('mongoose')
 const {
   bookingStatuses,
   paymentStatuses,
-  bookingSources,
-  serviceTypes
+  bookingSources
 } = require('../constants/booking')
 
 const bookingSchema = new mongoose.Schema({
@@ -30,12 +29,44 @@ const bookingSchema = new mongoose.Schema({
   service: {
     type: String,
     required: true,
-    enum: serviceTypes
+    trim: true,
+    maxlength: 100
+  },
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service'
+  },
+  serviceSlug: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    maxlength: 120
   },
   package: {
     type: String,
     trim: true,
     maxlength: 80
+  },
+  packageSnapshot: {
+    name: {
+      type: String,
+      trim: true,
+      maxlength: 80
+    },
+    price: {
+      type: Number,
+      min: 0
+    },
+    durationMinutes: {
+      type: Number,
+      min: 15,
+      max: 1440
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 500
+    }
   },
   preferredDate: {
     type: Date,
@@ -90,5 +121,6 @@ bookingSchema.index({ preferredDate: 1 })
 bookingSchema.index({ clientEmail: 1 })
 bookingSchema.index({ clientPhone: 1 })
 bookingSchema.index({ service: 1, createdAt: -1 })
+bookingSchema.index({ serviceSlug: 1, createdAt: -1 })
 
 module.exports = mongoose.model('Booking', bookingSchema)

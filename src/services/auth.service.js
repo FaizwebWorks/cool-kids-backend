@@ -55,6 +55,10 @@ const login = async ({ email, password }) => {
 }
 
 const refresh = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Refresh token is required')
+  }
+
   let decoded
 
   try {
@@ -82,6 +86,17 @@ const logout = async (userId) => {
   await redis.del(`refreshToken:${userId}`)
 }
 
+const logoutByRefreshToken = async (refreshToken) => {
+  if (!refreshToken) return
+
+  try {
+    const decoded = jwt.verify(refreshToken, env.jwt.refreshSecret)
+    await redis.del(`refreshToken:${decoded.userId}`)
+  } catch (error) {
+    // Cookie cleanup should still succeed for invalid or expired refresh tokens.
+  }
+}
+
 const changePassword = async (userId, currentPassword, newPassword) => {
   const user = await User.findById(userId).select('+password')
 
@@ -107,5 +122,6 @@ module.exports = {
   login,
   refresh,
   logout,
+  logoutByRefreshToken,
   changePassword
 }

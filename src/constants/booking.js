@@ -18,15 +18,6 @@ const bookingSources = {
   ADMIN: 'admin'
 }
 
-const serviceTypes = [
-  'Newborn',
-  'Maternity',
-  'Birthday',
-  'Wedding',
-  'Portrait',
-  'Fashion'
-]
-
 const bookingTimezone = 'Asia/Kolkata'
 
 const workingHours = {
@@ -56,7 +47,6 @@ module.exports = {
   bookingStatuses,
   paymentStatuses,
   bookingSources,
-  serviceTypes,
   bookingTimezone,
   workingHours,
   slotIntervalMinutes,
