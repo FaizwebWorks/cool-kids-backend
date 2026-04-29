@@ -324,6 +324,88 @@ Upload response includes Cloudinary URL and database asset metadata:
 }
 ```
 
+### Gallery
+
+Gallery images use the two-step upload flow:
+
+1. Upload image with `POST /uploads/images` and `context=gallery`.
+2. Create or update a gallery item using the returned `secureUrl` and asset `_id`.
+
+Public gallery API:
+
+```txt
+GET /gallery
+```
+
+Public response:
+
+```json
+{
+  "success": true,
+  "message": "Gallery items fetched successfully",
+  "data": {
+    "categories": ["All", "Newborn", "Maternity", "Wedding", "Birthday", "Portrait", "Fashion"],
+    "items": [
+      {
+        "_id": "...",
+        "title": "Tiny Toes",
+        "slug": "tiny-toes",
+        "image": "https://res.cloudinary.com/...",
+        "categories": ["Newborn", "Portrait"],
+        "altText": "Newborn baby portrait"
+      }
+    ]
+  }
+}
+```
+
+Admin/staff gallery APIs require Bearer token:
+
+```txt
+GET /gallery/admin/all?page=1&limit=20
+GET /gallery/admin/all?category=Newborn&page=1&limit=20
+GET /gallery/admin/all?isActive=true&page=1&limit=20
+POST /gallery
+PATCH /gallery/:id
+PATCH /gallery/:id/status
+DELETE /gallery/:id
+```
+
+Create gallery item body:
+
+```json
+{
+  "title": "Tiny Toes",
+  "slug": "tiny-toes",
+  "image": "https://res.cloudinary.com/...",
+  "imageAsset": "assetObjectIdFromUploadResponse",
+  "categories": ["Newborn", "Portrait"],
+  "altText": "Newborn baby portrait",
+  "description": "A soft newborn portrait session.",
+  "isActive": true,
+  "displayOrder": 1
+}
+```
+
+Update status body:
+
+```json
+{
+  "isActive": false
+}
+```
+
+Allowed gallery categories:
+
+```txt
+Newborn
+Maternity
+Wedding
+Birthday
+Portrait
+Fashion
+```
+
 ## Suggested Test Order
 
 1. `GET /health`
@@ -332,15 +414,17 @@ Upload response includes Cloudinary URL and database asset metadata:
 4. `GET /auth/me`
 5. `GET /services`
 6. `POST /uploads/images` with token and multipart image
-7. `GET /bookings/availability?date=2026-05-01&serviceSlug=newborn&package=Starter%20Package`
-8. `POST /bookings`
-9. `GET /bookings` without token should fail
-10. `GET /bookings` with token should pass
-11. `GET /bookings/:id`
-12. `PATCH /bookings/:id`
-13. `PATCH /bookings/:id/status`
-14. `POST /auth/refresh`
-15. `POST /auth/logout`
+7. `POST /gallery` with uploaded image URL and asset id
+8. `GET /gallery`
+9. `GET /bookings/availability?date=2026-05-01&serviceSlug=newborn&package=Starter%20Package`
+10. `POST /bookings`
+11. `GET /bookings` without token should fail
+12. `GET /bookings` with token should pass
+13. `GET /bookings/:id`
+14. `PATCH /bookings/:id`
+15. `PATCH /bookings/:id/status`
+16. `POST /auth/refresh`
+17. `POST /auth/logout`
 
 ## Notes
 
